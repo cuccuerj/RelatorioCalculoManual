@@ -70,8 +70,10 @@ class TeletherapyExtractor:
             block_eff = self._get_block('Profundidade Efetiva', 'Campo 1')
         prof_eff_vals = get_vals(block_eff, r'Campo \d+\s*([\d.]+)\s*cm')
 
+        # CORREÇÃO: Nova regex para capturar FSX e FSY
+        # Busca por "total fluence" ou "fluência total" seguido de fsx e fsy
         fluencia_matches = re.findall(
-            r'flu[eê]ncia\s+total.*?fsx\s*[a-zA-Z]*\s*=\s*([\d\.]+)\s*mm,\s*fsy\s*[a-zA-Z]*\s*=\s*([\d\.]+)\s*mm',
+            r'(?:total fluence|flu[eê]ncia total).*?fsx\s*=\s*(\d+)\s*mm.*?fsy\s*=\s*(\d+)\s*mm',
             c, re.IGNORECASE | re.DOTALL
         )
 
@@ -95,14 +97,13 @@ class TeletherapyExtractor:
             if i < len(filtros) and filtros[i] not in ('-', 'nan', ''):
                 has_filtro = True
 
-            if not has_filtro:
-                fsx, fsy = (None, None)
-                if len(fluencia_matches) == num_campos and num_campos > 0:
-                    fsx, fsy = fluencia_matches[i]
-                elif fluencia_matches:
-                    fsx, fsy = fluencia_matches[-1]
-                if fsx:
-                    f_x_val, f_y_val = fsx, fsy
+            if not has_filtro and fluencia_matches:
+                # Tenta pegar a fluência correspondente ao campo
+                if i < len(fluencia_matches):
+                    f_x_val, f_y_val = fluencia_matches[i]
+                else:
+                    # Se não houver correspondência, usa a última
+                    f_x_val, f_y_val = fluencia_matches[-1]
 
             row = [
                 safe(energias_campos, i, ""),
@@ -169,4 +170,3 @@ with gr.Blocks() as demo:
 
 if __name__ == "__main__":
     demo.launch()
-
