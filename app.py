@@ -71,11 +71,20 @@ class TeletherapyExtractor:
         prof_eff_vals = get_vals(block_eff, r'Campo \d+\s*([\d.]+)\s*cm')
 
         # CORREÇÃO: Nova regex para capturar FSX e FSY
-        # Busca por "total fluence" ou "fluência total" seguido de fsx e fsy
-        fluencia_matches = re.findall(
-            r'(?:total fluence|flu[eê]ncia total).*?fsx\s*=\s*(\d+)\s*mm.*?fsy\s*=\s*(\d+)\s*mm',
-            c, re.IGNORECASE | re.DOTALL
+        # O texto pode ter espaços ou quebras estranhas, então usamos \s* liberalmente
+        fluencia_matches = []
+        
+        # Padrão robusto: captura fsx e fsy com espaços flexíveis
+        pattern = re.findall(
+            r'fsx\s*[a-z]*\s*=\s*(\d+)\s*mm\s*,?\s*fsy\s*[a-z]*\s*=\s*(\d+)\s*mm',
+            c, re.IGNORECASE
         )
+        
+        if pattern:
+            fluencia_matches = pattern
+            print(f"DEBUG - Encontrados {len(fluencia_matches)} pares FSX/FSY")
+            for idx, (fsx, fsy) in enumerate(fluencia_matches):
+                print(f"  Campo {idx+1}: FSX={fsx}mm, FSY={fsy}mm")
 
         # Monta saída textual e tabela
         output_lines = []
